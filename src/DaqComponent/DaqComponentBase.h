@@ -13,6 +13,8 @@
  *
  */
 
+//test_add
+
 #ifndef DAQCOMPONENTBASE_H
 #define DAQCOMPONENTBASE_H
 
