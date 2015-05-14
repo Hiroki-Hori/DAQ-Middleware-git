@@ -27,7 +27,8 @@ enum DAQLifeCycleState
     LOADED,
     CONFIGURED,
     RUNNING,
-    PAUSED
+    PAUSED,
+    CHANGED
 };
 
 enum DAQCommand
@@ -38,7 +39,10 @@ enum DAQCommand
     CMD_UNCONFIGURE,
     CMD_PAUSE,
     CMD_RESUME,
-    CMD_NOP
+    CMD_NOP,
+    CMD_CHANGE,
+    CMD_REVCONFIGURE,
+    CMD_REVPAUSE
 };
 
 enum DAQDone

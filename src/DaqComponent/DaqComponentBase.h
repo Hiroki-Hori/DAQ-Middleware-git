@@ -64,7 +64,6 @@ namespace DAQMW
               m_state_prev(LOADED),
               m_isOnError(false),
               m_isTimerAlarm(false),
-              m_has_printed_error_log(false),
               m_debug(false)
         {
             mytimer = new Timer(STATUS_CYCLE_SEC);
@@ -324,6 +323,9 @@ namespace DAQMW
         virtual int daq_stop()        = 0;
         virtual int daq_pause()       = 0;
         virtual int daq_resume()      = 0;
+        virtual int daq_change()      = 0;
+        virtual int daq_revconfigure()= 0;
+        virtual int daq_revpause()    = 0;
 
         virtual int parse_params( ::NVList* list ) = 0;
 
@@ -349,11 +351,15 @@ namespace DAQMW
             m_daq_trans_func[CMD_RESUME]      = &DAQMW::DaqComponentBase::daq_resume;
             m_daq_trans_func[CMD_STOP]        = &DAQMW::DaqComponentBase::daq_base_stop;
             m_daq_trans_func[CMD_UNCONFIGURE] = &DAQMW::DaqComponentBase::daq_base_unconfigure;
+            m_daq_trans_func[CMD_CHANGE]      = &DAQMW::DaqComponentBase::daq_base_change;
+            m_daq_trans_func[CMD_REVCONFIGURE]= &DAQMW::DaqComponentBase::daq_base_revconfigure;
+            m_daq_trans_func[CMD_REVPAUSE]    = &DAQMW::DaqComponentBase::daq_base_revpause;
 
             m_daq_do_func[LOADED]     = &DAQMW::DaqComponentBase::daq_base_dummy;
             m_daq_do_func[CONFIGURED] = &DAQMW::DaqComponentBase::daq_base_dummy;
             m_daq_do_func[RUNNING]    = &DAQMW::DaqComponentBase::daq_run;
             m_daq_do_func[PAUSED]     = &DAQMW::DaqComponentBase::daq_base_dummy;
+            m_daq_do_func[CHANGED]    = &DAQMW::DaqComponentBase::daq_base_dummy;
         }
 
         int reset_timer()
@@ -660,7 +666,6 @@ namespace DAQMW
 
         bool m_isOnError;
         bool m_isTimerAlarm;
-        bool m_has_printed_error_log;
         bool m_debug;
 
         typedef int (DAQMW::DaqComponentBase::*DAQFunc)();
@@ -708,7 +713,6 @@ namespace DAQMW
             m_loop = 0;
             set_run_number();
             set_status(COMP_WORKING);
-            m_has_printed_error_log = false;
             daq_start();
             return 0;
         }
@@ -734,6 +738,27 @@ namespace DAQMW
             return 0;
         }
 
+        int daq_base_change()
+        {
+            set_status(COMP_WORKING);
+            daq_change();
+            return 0;
+        }
+
+        int daq_base_revconfigure()
+        {
+            set_status(COMP_WORKING);
+            daq_revconfigure();
+            return 0;
+        }
+
+        int daq_base_revpause()
+        {
+            set_status(COMP_WORKING);
+            daq_revpause();
+            return 0;
+        }
+
         int get_command()
         {
             m_command = m_daq_service0.getCommand();
@@ -752,17 +777,14 @@ namespace DAQMW
             return 0;
         }
 
-        virtual int daq_onError(){
-            // m_isOnError = true; // will be set on fatal_error_report()
+        int daq_onError(){
+            m_isOnError = true;
             if (check_trans_lock()) {
                 set_trans_unlock();
             }
-            if (! m_has_printed_error_log) {
-                std::cerr << "### daq_onError(): ERROR Occured\n";
-                // std::cerr << m_err_message << std::endl;
-                set_status(COMP_FATAL);
-                m_has_printed_error_log = true;
-            }
+            std::cerr << "### daq_onError(): ERROR Occured\n";
+            std::cerr << m_err_message << std::endl;
+            set_status(COMP_FATAL);
             usleep(DAQ_IDLE_TIME_USEC);
             return 0;
         }
@@ -803,6 +825,18 @@ namespace DAQMW
                 m_state_prev = RUNNING;
                 m_state = PAUSED;
                 set_trans_lock();
+                break;
+            case CMD_CHANGE:
+                m_state_prev = PAUSED;
+                m_state = CHANGED;
+                break;
+            case CMD_REVCONFIGURE:
+                m_state_prev = CHANGED;
+                m_state = CONFIGURED;
+                break;
+            case CMD_REVPAUSE:
+                m_state_prev = CHANGED;
+                m_state = PAUSED;
                 break;
             case CMD_RESUME:
                 m_state_prev = PAUSED;
