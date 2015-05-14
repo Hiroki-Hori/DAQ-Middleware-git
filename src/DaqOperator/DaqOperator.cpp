@@ -226,6 +226,9 @@ std::string DaqOperator::check_state(DAQLifeCycleState compState)
     case PAUSED:
         comp_state = "PAUSED";
         break;
+    case CHANGED:
+        comp_state = "CHANGED";
+        break;
     }
     return comp_state;
 }
@@ -307,6 +310,9 @@ RTC::ReturnCode_t DaqOperator::run_console_mode()
               << CMD_UNCONFIGURE << ":unconfigure  "
               << CMD_PAUSE       << ":pause  "
               << CMD_RESUME      << ":resume   "
+              << CMD_CHANGE      << ":change   "
+              << CMD_REVCONFIGURE<< ":revconfigure   "
+              << CMD_REVPAUSE    << ":revpause   "
               << std::endl;
 
     std::cerr << "\n" << " RUN NO: " << m_runNumber;
@@ -333,6 +339,16 @@ RTC::ReturnCode_t DaqOperator::run_console_mode()
                 resume_procedure();///
                 m_state = RUNNING;
                 break;
+//add
+            case CMD_CHANGE:
+		std::cerr << "\033[3;20H";
+                std::cerr << "Input_xml_file: ";
+                std::cin >> idNo;
+                old_state = m_state;
+                change_procedure();///
+                m_state = CHANGED;
+                break;
+//
             default:
                 std::cerr << "   Bad Command:" << command << std::endl;
                 break;
@@ -364,6 +380,16 @@ RTC::ReturnCode_t DaqOperator::run_console_mode()
                 unconfigure_procedure();
                 m_state = LOADED;
                 break;
+//add
+            case CMD_CHANGE:
+		std::cerr << "\033[3;20H";
+                std::cerr << "Input_xml_file: ";
+                std::cin >> idNo;
+                old_state = m_state;
+                change_procedure();///
+                m_state = CHANGED;
+                break;
+//
             default:
                 std::cerr << "   Bad Command\n";
                 break;
@@ -385,6 +411,31 @@ RTC::ReturnCode_t DaqOperator::run_console_mode()
                 break;
             }
             break;
+//add
+        case CHANGED:
+            switch ((DAQCommand)command) {
+            case CMD_REVCONFIGURE:
+                revconfigure_procedure();
+                m_state = CONFIGURED;
+                break;
+            case CMD_REVPAUSE:
+                switch (old_state) {
+                case CONFIGURED:
+                    std::cerr << "   Bad Command: ";
+                    std::cerr << command << std::endl;
+                    break;
+                case PAUSED:
+                    revpause_procedure();
+                    m_state = PAUSED;
+                    break;
+                }
+                break;
+            default:
+                std::cerr << "   Bad Command: ";
+                std::cerr << command << std::endl;
+                break;
+            }
+//
         }// switch (m_state)
     }
     else {
@@ -392,6 +443,16 @@ RTC::ReturnCode_t DaqOperator::run_console_mode()
         std::cerr << "\033[;H\033[2J";
         std::cerr << "\033[5;0H";
         std::cerr << std::endl;
+
+//add
+        std::cerr << "\033[6;0H";
+        filename_output();
+        std::cerr << " ID:XML_FILE" << std::endl;
+        for(int i=0;i<file_num;i++){
+           std::cerr << " " << i << ":" << file_name[i] << std::endl;;
+        }
+           std::cerr << std::endl;
+//
 
         std::cerr << "  GROUP:COMP_NAME"
                   << "        "
@@ -771,6 +832,7 @@ int DaqOperator::pause_procedure()
     m_com_completed = true;
     return 0;
 }
+
 int DaqOperator::resume_procedure()
 {
     m_com_completed = false;
@@ -788,12 +850,168 @@ int DaqOperator::resume_procedure()
     m_com_completed = true;
     return 0;
 }
+
+//add
+int DaqOperator::change_procedure()
+{
+    if (m_debug) {
+        std::cout << "*** configure_procedure: enter" << std::endl;
+    }
+
+    m_com_completed = false;
+    ConfFileParser MyParser;
+    ParamList paramList;
+    CompGroupList groupList;
+    ::NVList systemParamList;
+    ::NVList groupParamList;
+    m_start_date = "";
+    m_stop_date  = "";
+
+    gettime_set[0] = gettimeofday_sec();//start
+    try {
+	sprintf(input_xmlfile,"/home/daq/MyDaq/Xml/%s",file_name[idNo]);
+    	m_conf_file = input_xmlfile;
+        m_comp_num = MyParser.readConfFile(m_conf_file.c_str(), true);
+        paramList  = MyParser.getParamList();
+        groupList  = MyParser.getGroupList();
+
+        if (m_debug) {
+            std::cerr << "*** Comp num = " << m_comp_num << std::endl;
+            std::cerr << "*** paramList.size()  = " << paramList.size() << std::endl;
+            std::cerr << "*** groupList.size()  = " << groupList.size() << std::endl;
+            std::cerr << "*** serviceList.size()= " << m_daqServiceList.size() << std::endl;
+        }
+        gettime_set[1] = gettimeofday_sec();//after get change xml file
+        for (int index = 0; index < (int)paramList.size(); index++) {
+            if (m_debug) {
+                std::cerr << "ID:" << paramList[index].getId() << std::endl;
+            }
+            ::NVList mylist = paramList[index].getList();
+            if (m_debug) {
+                for (int i=0; i < (int)mylist.length(); i++) {
+                    std::cerr << "  name :" << mylist[i].name  << std::endl;
+                    std::cerr << "  value:" << mylist[i].value << std::endl;
+                }
+            }
+        }
+        if (m_debug) {
+            for (int i=0; i< (int)m_daqServiceList.size(); i++) {
+                std::cerr << "*** id:" << m_daqServiceList[i].comp_id << std::endl;
+            }
+        }
+    } catch (...) {
+        std::cerr << "### ERROR: DaqOperator: Failed to read the Configuration file\n";
+        std::cerr << "### Check the Configuration file\n";
+        return 1;
+    }
+
+    if (m_debug) {
+        std::cerr << "m_daqServiceList.size():" << m_daqServiceList.size() << std::endl;
+    }
+    gettime_set[2] = gettimeofday_sec();//after get paramater
+    try {
+        for (int i = 0; i < (int)m_daqservices.size(); i++) {
+            RTC::ConnectorProfileList_var myprof 
+                = m_DaqServicePorts[i]->get_connector_profiles();
+
+            char * id = CORBA::string_dup(myprof[0].name);
+
+            if (m_debug) {
+                std::cerr << "*** id:" << id << std::endl;
+            }
+
+            for (int j = 0; j < (int)paramList.size(); j++) {
+                if (m_debug) {
+                    std::cerr << "paramList[i].getId():" << paramList[j].getId() << std::endl;
+                }
+                if (paramList[j].getId() == id) {
+                    if (m_debug) {
+                        std::cerr << "paramList[i].getId():" << paramList[j].getId() << std::endl;
+                        std::cerr << "m_daqServiceList  id:" << id << std::endl;
+                    }
+                    int len = paramList[j].getList().length();
+                    if (m_debug) {
+                        std::cerr << "paramList[i].getList().size()" << len << std::endl;
+                    }
+                    ::NVList mylist(len);
+                    mylist = paramList[j].getList();
+
+                    if (m_debug) {
+                        for (int k = 0; k < len; k++) {
+                            std::cerr << "mylist[" << k << "].name: " << mylist[k].name << std::endl;
+                            std::cerr << "mylist[" << k << "].valu: " << mylist[k].value << std::endl;
+                        }
+                    }
+                    m_daqservices[i]->setCompParams( paramList[j].getList() );
+                }
+            }
+            CORBA::string_free(id);
+        }
+        gettime_set[3] = gettimeofday_sec();//after get parameter to set component
+        for (int i = 0; i< m_comp_num; i++) {
+            set_command(m_daqservices[i], CMD_CHANGE);
+            check_done(m_daqservices[i]);
+        }
+
+    } catch (...) {
+        std::cerr << "### ERROR: DaqOperator: Failed to change Components.\n";
+        return 1;
+    }
+    gettime_set[4] = gettimeofday_sec();//after end at all
+
+    ofs.open("/home/daq/MyDaq/Record/Record.csv", std::ios::app);
+    ofs << gettime_set[1] - gettime_set[0] << "," << gettime_set[2] - gettime_set[1]
+        << "," << gettime_set[3] - gettime_set[2] << "," << gettime_set[4] - gettime_set[3]
+        << "," << gettime_set[4] - gettime_set[0] << std::endl;
+    ofs.close();
+
+    m_com_completed = true;
+
+    return 0;
+}
+
+int DaqOperator::revconfigure_procedure()
+{
+    m_com_completed = false;
+    try {
+        for (int i = 0; i< m_comp_num; i++) {
+            set_command(m_daqservices[i], CMD_REVCONFIGURE);
+            check_done(m_daqservices[i]);
+        }
+    } catch(...) {
+        std::cerr << "### ERROR: DaqOperator: Failed to revconfigure Component.\n";
+        return 1;
+    }
+
+    m_com_completed = true;
+    return 0;
+}
+
+int DaqOperator::revpause_procedure()
+{
+    m_com_completed = false;
+    try {
+        for (int i = 0; i< m_comp_num; i++) {
+            set_command(m_daqservices[i], CMD_REVPAUSE);
+            check_done(m_daqservices[i]);
+        }
+    } catch(...) {
+        std::cerr << "### ERROR: DaqOperator: Failed to revpause Component.\n";
+        return 1;
+    }
+
+    m_com_completed = true;
+    return 0;
+}
+//
+
 int DaqOperator::abort_procedure()
 {
   std::cout << "abort_procedure: enter" << std::endl;
 
   return 0;
 }
+
 int DaqOperator::putstatus_procedure()
 {
 
@@ -1137,6 +1355,38 @@ void DaqOperator::createDom_ng(std::string name, int code, char* str_e, char* st
     DAQMW::CreateDom createDom;
     m_msg = createDom.getNG(name, code, name, str_e, str_j);
 }
+
+//add
+int DaqOperator::filename_output()
+{
+    int i;
+    FILE *in_popen = popen("ls ~/MyDaq/Xml/","r");
+    char buf[30];
+
+    memset(buf,'\0',sizeof(buf));
+    for(i=0;i<20;i++){
+        memset(file_name[i],'\0',sizeof(file_name[i]));
+    }
+
+    i=0;
+    while((fgets(buf,30,in_popen)) != NULL ){
+	buf[strlen(buf) - 1] = '\0';
+	sprintf(file_name[i],"%s",buf);
+       	i++;
+    }
+    file_num=i;
+    pclose(in_popen);
+
+    return 0;
+}
+
+double DaqOperator::gettimeofday_sec()
+{
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return tv.tv_sec + tv.tv_usec * 1e-6;
+}
+//
 
 extern "C"
 {

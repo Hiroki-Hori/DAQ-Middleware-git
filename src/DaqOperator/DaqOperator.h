@@ -42,6 +42,11 @@
 #include "CreateDom.h"
 #include "ParameterServer.h"
 
+//add
+#include <sys/time.h>
+#include <fstream>
+//
+
 using namespace RTC;
 
 // error code for dom
@@ -108,6 +113,8 @@ public:
     int command_confirmconnection();
     int command_dummy();
 
+
+
     void set_console_flag(bool console);
     void set_port_no(int port);
     std::string getConfFilePath();
@@ -138,6 +145,22 @@ private:
     int abort_procedure();
     int putstatus_procedure();
     int log_procedure();
+//add
+    int idNo;
+    int change_procedure();
+    int revconfigure_procedure();
+    int revpause_procedure();
+    int fileNo;
+    int filename_output();
+    int file_num;
+    char input_xmlfile[40];
+    char file_name[100][30];
+    int old_state;
+
+    double gettime_set[10];
+    double gettimeofday_sec();
+    std::ofstream ofs;
+//
 
     RTC::ReturnCode_t run_console_mode();
     RTC::ReturnCode_t run_http_mode();
