@@ -258,28 +258,33 @@ void DaqOperator::run_data()
 {
     std::cerr << "\033[;H\033[2J";
 
-    for (int i = 0; i< m_comp_num; i++) {
-        Status_var status;
-        status = m_daqservices[i]->getStatus();
+    try {
+        for (int i = 0; i< m_comp_num; i++) {
+            Status_var status;
+            status = m_daqservices[i]->getStatus();
 
-        if (status->comp_status == COMP_FATAL) {
-            RTC::ConnectorProfileList_var myprof =
-                m_DaqServicePorts[i]->get_connector_profiles();
-            std::cerr << myprof[0].name << " "
-                      << "### on ERROR ###  " << std::endl;
+            if (status->comp_status == COMP_FATAL) {
+                RTC::ConnectorProfileList_var myprof =
+                    m_DaqServicePorts[i]->get_connector_profiles();
+                std::cerr << myprof[0].name << " "
+                            << "### on ERROR ###  " << std::endl;
 
-            FatalErrorStatus_var errStatus;
-            errStatus = m_daqservices[i]->getFatalStatus();
-            std::cerr << "\033[1;0H";
-            std::cerr << "errStatus.fatalTypes:"
-                      << errStatus->fatalTypes << std::endl;
-            std::cerr << "errStatus.errorCode:"
-                      << errStatus->errorCode  << std::endl;
-            std::cerr << "errStatus.description:"
-                      << errStatus->description  << std::endl;
-            m_err_msg = errStatus->description;
-        } // if fatal
+                FatalErrorStatus_var errStatus;
+                errStatus = m_daqservices[i]->getFatalStatus();
+                std::cerr << "\033[1;0H";
+                std::cerr << "errStatus.fatalTypes:"
+                            << errStatus->fatalTypes << std::endl;
+                std::cerr << "errStatus.errorCode:"
+                            << errStatus->errorCode  << std::endl;
+                std::cerr << "errStatus.description:"
+                            << errStatus->description  << std::endl;
+                m_err_msg = errStatus->description;
+            } // if fatal
+        }
+    } catch (...) {
+        std::cerr << "DaqOperator::run_data() Exception was caught" << std::endl;
     }
+
 
     std::cerr << "\033[0;0H";
     std::cerr << "RUN#" << m_runNumber
@@ -326,6 +331,8 @@ RTC::ReturnCode_t DaqOperator::run_console_mode()
     }
 
     if (FD_ISSET(0, &m_rset)) {
+        int check_ret; //add
+
         char comm[2];
         if ( read(0, comm, sizeof(comm)) == -1) {
             return RTC::RTC_OK;
@@ -345,7 +352,12 @@ RTC::ReturnCode_t DaqOperator::run_console_mode()
                 std::cerr << "Input_xml_file: ";
                 std::cin >> idNo;
                 old_state = m_state;
-                change_procedure();///
+                check_ret = change_procedure();///
+                if(check_ret == RET_CODE_CHG_NOT_FOUND) {
+                    std::cerr << "bad file selected.\n";
+                    break;
+                }
+
                 m_state = CHANGED;
                 break;
 //
@@ -386,7 +398,13 @@ RTC::ReturnCode_t DaqOperator::run_console_mode()
                 std::cerr << "Input_xml_file: ";
                 std::cin >> idNo;
                 old_state = m_state;
-                change_procedure();///
+
+                check_ret = change_procedure();///
+                if(check_ret == RET_CODE_CHG_NOT_FOUND) {
+                    std::cerr << "bad file selected.\n";
+                    break;
+                }
+
                 m_state = CHANGED;
                 break;
 //
@@ -856,6 +874,15 @@ int DaqOperator::change_procedure()
 {
     if (m_debug) {
         std::cout << "*** configure_procedure: enter" << std::endl;
+    }
+
+//add
+    //check select file name
+    //if not found xml file name, return error
+    std::string fname_str = file_name[idNo];
+    if(fname_str.length() == 0) {
+        std::cerr << "xml file not found."  << std::endl;
+        return RET_CODE_CHG_NOT_FOUND;
     }
 
     m_com_completed = false;

@@ -64,6 +64,7 @@ namespace DAQMW
               m_state_prev(LOADED),
               m_isOnError(false),
               m_isTimerAlarm(false),
+              m_has_printed_error_log(false),
               m_debug(false)
         {
             mytimer = new Timer(STATUS_CYCLE_SEC);
@@ -323,6 +324,7 @@ namespace DAQMW
         virtual int daq_stop()        = 0;
         virtual int daq_pause()       = 0;
         virtual int daq_resume()      = 0;
+//add
         virtual int daq_change()      = 0;
         virtual int daq_revconfigure()= 0;
         virtual int daq_revpause()    = 0;
@@ -351,6 +353,7 @@ namespace DAQMW
             m_daq_trans_func[CMD_RESUME]      = &DAQMW::DaqComponentBase::daq_resume;
             m_daq_trans_func[CMD_STOP]        = &DAQMW::DaqComponentBase::daq_base_stop;
             m_daq_trans_func[CMD_UNCONFIGURE] = &DAQMW::DaqComponentBase::daq_base_unconfigure;
+//add
             m_daq_trans_func[CMD_CHANGE]      = &DAQMW::DaqComponentBase::daq_base_change;
             m_daq_trans_func[CMD_REVCONFIGURE]= &DAQMW::DaqComponentBase::daq_base_revconfigure;
             m_daq_trans_func[CMD_REVPAUSE]    = &DAQMW::DaqComponentBase::daq_base_revpause;
@@ -359,6 +362,7 @@ namespace DAQMW
             m_daq_do_func[CONFIGURED] = &DAQMW::DaqComponentBase::daq_base_dummy;
             m_daq_do_func[RUNNING]    = &DAQMW::DaqComponentBase::daq_run;
             m_daq_do_func[PAUSED]     = &DAQMW::DaqComponentBase::daq_base_dummy;
+//add
             m_daq_do_func[CHANGED]    = &DAQMW::DaqComponentBase::daq_base_dummy;
         }
 
@@ -666,6 +670,7 @@ namespace DAQMW
 
         bool m_isOnError;
         bool m_isTimerAlarm;
+        bool m_has_printed_error_log;
         bool m_debug;
 
         typedef int (DAQMW::DaqComponentBase::*DAQFunc)();
@@ -713,6 +718,7 @@ namespace DAQMW
             m_loop = 0;
             set_run_number();
             set_status(COMP_WORKING);
+            m_has_printed_error_log = false;
             daq_start();
             return 0;
         }
@@ -738,6 +744,7 @@ namespace DAQMW
             return 0;
         }
 
+//add
         int daq_base_change()
         {
             set_status(COMP_WORKING);
@@ -758,6 +765,7 @@ namespace DAQMW
             daq_revpause();
             return 0;
         }
+//
 
         int get_command()
         {
@@ -777,14 +785,17 @@ namespace DAQMW
             return 0;
         }
 
-        int daq_onError(){
-            m_isOnError = true;
+        virtual int daq_onError(){
+            // m_isOnError = true; // will be set on fatal_error_report()
             if (check_trans_lock()) {
                 set_trans_unlock();
             }
-            std::cerr << "### daq_onError(): ERROR Occured\n";
-            std::cerr << m_err_message << std::endl;
-            set_status(COMP_FATAL);
+            if (! m_has_printed_error_log) {
+                std::cerr << "### daq_onError(): ERROR Occured\n";
+                // std::cerr << m_err_message << std::endl;
+                set_status(COMP_FATAL);
+                m_has_printed_error_log = true;
+            }
             usleep(DAQ_IDLE_TIME_USEC);
             return 0;
         }
@@ -826,6 +837,8 @@ namespace DAQMW
                 m_state = PAUSED;
                 set_trans_lock();
                 break;
+
+//add
             case CMD_CHANGE:
                 m_state_prev = PAUSED;
                 m_state = CHANGED;
@@ -838,6 +851,7 @@ namespace DAQMW
                 m_state_prev = CHANGED;
                 m_state = PAUSED;
                 break;
+
             case CMD_RESUME:
                 m_state_prev = PAUSED;
                 m_state = RUNNING;

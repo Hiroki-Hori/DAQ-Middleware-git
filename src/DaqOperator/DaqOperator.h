@@ -53,6 +53,10 @@ using namespace RTC;
 static const int RET_CODE_IO_ERR		= (-14);
 static const int RET_CODE_REQ_INV_IN_STS	= (-26);
 
+//add
+//error code for changed state
+static const int RET_CODE_CHG_NOT_FOUND          = (-101);
+
 struct serviceInfo {
     std::string comp_id;
     RTC::CorbaConsumer<DAQService> daqService;
