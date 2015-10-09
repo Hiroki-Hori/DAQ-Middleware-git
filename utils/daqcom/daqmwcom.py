@@ -82,6 +82,34 @@ class daqmwcom:
         self.response, self.content = self.http.request(self.url, 'POST', headers=self.headers, body=urllib.urlencode(self.body))
         return self.content
 
+    def change(self, xmlPath):
+        self.url = self.urlbase + "Change"
+        self.body= {"cmd":"<?xml version='1.0' encoding='UTF-8' ?><request><xmlPath>" + xmlPath + "</xmlPath></request>"}
+        self.headers = {'Content-type': 'application/x-www-form-urlencoded'}
+        self.response, self.content = self.http.request(self.url, 'POST', headers=self.headers, body=urllib.urlencode(self.body))
+        return self.content
+
+    def revConfigure(self):
+        self.url = self.urlbase + "revConfigure"
+        self.body ={"cmd":" " } 
+        self.headers = {'Content-type': 'application/x-www-form-urlencoded'}
+        self.response, self.content = self.http.request(self.url, 'POST', headers=self.headers, body=urllib.urlencode(self.body))
+        return self.content
+
+    def revPause(self):
+        self.url = self.urlbase + "revPause"
+        self.body ={"cmd":" " } 
+        self.headers = {'Content-type': 'application/x-www-form-urlencoded'}
+        self.response, self.content = self.http.request(self.url, 'POST', headers=self.headers, body=urllib.urlencode(self.body))
+        return self.content
+
+    def setXmlPath(self, xmlPath):
+        self.url = self.urlbase + "../writexmlpath.py/SaveXmlPath"
+        self.body ={"xmlPath": xmlPath }
+        self.headers = {'Content-type': 'application/x-www-form-urlencoded'}
+        self.response, self.content = self.http.request(self.url, 'POST', headers=self.headers, body=urllib.urlencode(self.body))
+        return self.content
+
     def getLog(self, tag):
         self.url = self.urlbase + "Log"
         self.response, self.content = self.http.request(self.url, 'GET')
@@ -117,6 +145,9 @@ class daqmwcom:
             print "       -u or --unconfigure : unconfigure command"
             print "       -p or --pause       : pause command"
             print "       -r or --resume      : resume command"
+            print "       --change            : change command"
+            print "       --revconfigure      : revconfigure command"
+            print "       --revpause          : revpause command"
             print "       -g tag or --getLog tag : getLog command"
             print "          for example, -g state or -g all"
             print "            all means all of tags"
@@ -124,7 +155,7 @@ class daqmwcom:
 
         urlbase = sys.argv[1]
         com = daqmwcom(urlbase)
-        opts, args = getopt.getopt(sys.argv[2:],'cb:euprg:s', ['configure', 'start=', 'stop', 'unconfigure', 'pause', 'resume', 'getLog', 'getLogSecure'] )
+        opts, args = getopt.getopt(sys.argv[2:],'cb:euprgGCP:s', ['configure', 'start=', 'stop', 'unconfigure', 'pause', 'resume', 'change=', 'revconfigure', 'revpause', 'getLog', 'getLogSecure'] )
         # print opts, args
         for o, a in opts:
             if o == "--configure" or o == "-c":
@@ -141,6 +172,16 @@ class daqmwcom:
                 print com.pause()
             elif o == "--resume" or o == "-r":
                 print com.resume()
+
+            elif o == "--change":
+                xmlPath = a
+                print com.setXmlPath(xmlPath)
+                print com.change(xmlPath)
+            elif o == "--revconfigure":
+                print com.revConfigure()
+            elif o == "--revpause":
+                print com.revPause()
+
             elif o == "--getLog" or o == "-g":
                 tag = a
                 print com.getLog(tag)
