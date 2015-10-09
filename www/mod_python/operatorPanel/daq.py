@@ -103,6 +103,21 @@ def Restart(req, cmd=None):
 	if req.method == 'POST':
 		putFunc(req, "Restart", cmd)
 
+def Change(req, cmd=None):
+        """change command"""
+        if req.method == 'POST':
+                putFunc(req, "Change", cmd)
+
+def revConfigure(req, cmd=None):
+        """revConfigure command"""
+        if req.method == 'POST':
+                putFunc(req, "revConfigure", cmd)
+
+def revPause(req, cmd=None):
+        """revPause command"""
+        if req.method == 'POST':
+                putFunc(req, "revPause", cmd)
+
 def Abort(req, cmd=None):
 	"""Abort command"""
 	if req.method == 'POST':
