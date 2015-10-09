@@ -124,6 +124,33 @@ static int cb_command_confirmconnection() {
 	g_server->setMsg(daq->getMsg());
 	return 0;
 }
+
+static int cb_command_change() {
+        DaqOperator* daq = DaqOperator::Instance();
+
+        std::string body = daq->getBody();
+        if ( !daq->parse_body(body.c_str(), "xmlPath") ) {
+            return -1;
+        }
+
+        daq->command_change();
+        g_server->setMsg(daq->getMsg());
+        return 0;
+}
+static int cb_command_revconfigure() {
+        DaqOperator* daq = DaqOperator::Instance();
+        daq->command_revconfigure();
+        g_server->setMsg(daq->getMsg());
+        return 0;
+}
+static int cb_command_revpause() {
+        DaqOperator* daq = DaqOperator::Instance();
+        daq->command_revpause();
+        g_server->setMsg(daq->getMsg());
+        return 0;
+}
+
+
 static int cb_command_dummy() {
 	DaqOperator* daq = DaqOperator::Instance();
 	daq->command_dummy();
