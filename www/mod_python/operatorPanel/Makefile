@@ -16,6 +16,8 @@ INSTALL_FILES += ParameterClient.py
 INSTALL_FILES += daq.py
 INSTALL_FILES += writedata.py
 INSTALL_FILES += runNumber.txt
+INSTALL_FILES += writexmlpath.py
+INSTALL_FILES += xmlPath.txt
 
 SOCK_INC       = ../../../src/lib/SiTCP/CPP/Sock
 SOCK_LIB       = -L../../../src/lib/SiTCP/CPP/Sock -lSock
@@ -46,6 +48,7 @@ install:
 	install -d -m 0755 $(INSTALL_DIR)
 	install -m 0644 $(INSTALL_FILES) $(INSTALL_DIR)
 	chmod 0666 $(INSTALL_DIR)/runNumber.txt
+	chmod 0666 $(INSTALL_DIR)/xmlPath.txt
 
 clean:
 	rm -f ${IFILE}.py ${WRAPFILE} ${WRAPFILE_O} ${SHAREDLIB}
