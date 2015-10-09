@@ -59,7 +59,7 @@ DaqOperator::DaqOperator(RTC::Manager* manager)
     m_isConsoleMode(true),
     m_msg(" "),
     m_err_msg(" "),
-    m_debug(false)
+    m_debug(true)
 {
     if (m_debug) {
         std::cerr << "Create DaqOperator\n";
@@ -197,6 +197,11 @@ RTC::ReturnCode_t DaqOperator::run_http_mode()
         g_server->bind("put:Save", &m_body, cb_command_save);
         g_server->bind("put:ConfirmConnection", &m_body, 
                        cb_command_confirmconnection);
+//add
+        g_server->bind("put:Change", &m_body, cb_command_change);
+        g_server->bind("put:revConfigure", &m_body, cb_command_revconfigure);
+        g_server->bind("put:revPause", &m_body, cb_command_revpause);
+//
         g_server->bind("put:dummy", &m_body, cb_command_dummy);
         if (m_debug) {
             std::cerr << "*** bind callback functions done\n";
@@ -565,6 +570,11 @@ bool DaqOperator::parse_body(const char* buf, const std::string tagname)
             std::cerr << "*** m_runNumber:" << m_runNumber << std::endl;
         }
     }
+    if (strlen(tag) != 0 && tagname == "xmlPath") {
+        xmlPath = tag;
+        std::cerr << "*** change xml path:" << xmlPath << std::endl;
+    }
+
 
     XMLString::release(&name);
     XMLString::release(&tag);
@@ -896,8 +906,13 @@ int DaqOperator::change_procedure()
 
     gettime_set[0] = gettimeofday_sec();//start
     try {
-	sprintf(input_xmlfile,"/home/daq/MyDaq/Xml/%s",file_name[idNo]);
-    	m_conf_file = input_xmlfile;
+        if (xmlPath != "") {
+            m_conf_file = xmlPath.c_str();
+        }else {
+            sprintf(input_xmlfile,"/home/daq/MyDaq/Xml/%s",file_name[idNo]);
+            m_conf_file = input_xmlfile;
+        }
+
         m_comp_num = MyParser.readConfFile(m_conf_file.c_str(), true);
         paramList  = MyParser.getParamList();
         groupList  = MyParser.getGroupList();
@@ -1351,6 +1366,62 @@ int DaqOperator::command_confirmconnection()
 
     return 0;
 }
+//add
+int DaqOperator::command_change()
+{
+    //std::cout << "command_change: enter" << std::endl;
+
+    if (m_state != CONFIGURED && m_state != PAUSED) {
+        createDom_ng("Change");
+        std::cerr << "   Bad Command\n";
+        return 1;
+    }
+
+    old_state = m_state;
+    change_procedure();
+    m_state = CHANGED;
+
+    createDom_ok("Change");
+
+    return 0;
+}
+int DaqOperator::command_revconfigure()
+{
+    //std::cout << "command_stop: enter" << std::endl;
+
+    if (m_state != CHANGED || old_state != CONFIGURED) {
+        createDom_ng("revConfigure");
+        std::cerr << "   Bad Command\n";
+        return 1;
+    }
+
+    revconfigure_procedure();
+    m_state = CONFIGURED;
+
+    createDom_ok("revConfigure");
+
+    return 0;
+}
+int DaqOperator::command_revpause()
+{
+    //std::cout << "command_stop: enter" << std::endl;
+
+    if (m_state != CHANGED || old_state != PAUSED) {
+        createDom_ng("revPause");
+        std::cerr << "   Bad Command\n";
+        return 1;
+    }
+
+    revpause_procedure();
+    m_state = PAUSED;
+
+    createDom_ok("revPause");
+
+    return 0;
+}
+//
+
+
 int DaqOperator::command_dummy()
 {
     //std::cout << "command_dummy: enter" << std::endl;

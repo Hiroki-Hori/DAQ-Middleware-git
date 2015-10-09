@@ -115,6 +115,11 @@ public:
     int command_resetparams();
     int command_save();
     int command_confirmconnection();
+//add
+    int command_change();
+    int command_revconfigure();
+    int command_revpause();
+//
     int command_dummy();
 
 
@@ -164,6 +169,8 @@ private:
     double gettime_set[10];
     double gettimeofday_sec();
     std::ofstream ofs;
+
+    std::string xmlPath;
 //
 
     RTC::ReturnCode_t run_console_mode();
