@@ -59,7 +59,7 @@ DaqOperator::DaqOperator(RTC::Manager* manager)
     m_isConsoleMode(true),
     m_msg(" "),
     m_err_msg(" "),
-    m_debug(true)
+    m_debug(false)
 {
     if (m_debug) {
         std::cerr << "Create DaqOperator\n";
@@ -301,7 +301,7 @@ void DaqOperator::run_data()
 //#ifdef AAA
 RTC::ReturnCode_t DaqOperator::run_console_mode()
 {
-    ///char* state[] = {"LOADED", "CONFIGURED", "RUNNING", "PAUSED"};
+    ///char* state[] = {"LOADED", "CONFIGURED", "RUNNING", "PAUSED", "CHANGED"};
     std::string srunNo = "0";
 
     int command;
@@ -573,6 +573,8 @@ bool DaqOperator::parse_body(const char* buf, const std::string tagname)
     if (strlen(tag) != 0 && tagname == "xmlPath") {
         xmlPath = tag;
         std::cerr << "*** change xml path:" << xmlPath << std::endl;
+    }else {
+        std::cerr << "*** change xml path not found" << std::endl;
     }
 
 
@@ -890,11 +892,21 @@ int DaqOperator::change_procedure()
     //check select file name
     //if not found xml file name, return error
     std::string fname_str = file_name[idNo];
-    if(fname_str.length() == 0) {
-        std::cerr << "xml file not found."  << std::endl;
-        return RET_CODE_CHG_NOT_FOUND;
+/*    FILE *fnamechk;
+    if ((fnamechk = fopen(file_name[idNo], "r")) == NULL) {
+        sleep(5);
+        fclose(fnamechk);
+        FILE *fchk;
+        if((fchk = fopen(xmlPath.c_str(), "r")) == NULL) {
+            fclose(fchk);
+            std::cerr << "xml file not found."  << std::endl;
+            sleep(3);
+            return RET_CODE_CHG_NOT_FOUND;
+        }
+        fclose(fchk);
     }
-
+    fclose(fnamechk);
+*/
     m_com_completed = false;
     ConfFileParser MyParser;
     ParamList paramList;
@@ -907,7 +919,7 @@ int DaqOperator::change_procedure()
     gettime_set[0] = gettimeofday_sec();//start
     try {
         if (xmlPath != "") {
-            m_conf_file = xmlPath.c_str();
+            m_conf_file = xmlPath;
         }else {
             sprintf(input_xmlfile,"/home/daq/MyDaq/Xml/%s",file_name[idNo]);
             m_conf_file = input_xmlfile;
