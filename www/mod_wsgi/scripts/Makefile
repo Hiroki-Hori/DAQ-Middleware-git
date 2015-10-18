@@ -14,6 +14,7 @@ INSTALL_FILES += _ParameterClient.so
 INSTALL_FILES += ParameterClient.py
 INSTALL_FILES += daq.py
 INSTALL_FILES += writedata.py
+INSTALL_FILES += writexmlpath.py
 
 SOCK_INC       = ../../../src/lib/SiTCP/CPP/Sock
 SOCK_LIB       = -L../../../src/lib/SiTCP/CPP/Sock -lSock
@@ -30,13 +31,16 @@ WRAPFILE_O     = $(IFILE)_wrap.o
 SHAREDLIB      = _${IFILE}.so
 CXX_FLAGS      = -c -fpic
 
-all: ${SHAREDLIB} writedata.html writedata.py
+all: ${SHAREDLIB} writedata.html writedata.py writexmlpath.py
 
 writedata.html: writedata.html.in
 	sed -e 's|@WWW_DOCUMENT_ROOT@|$(WWW_DOCUMENT_ROOT)|' writedata.html.in > writedata.html
 
 writedata.py: writedata.py.in
 	sed -e 's|@WWW_DOCUMENT_ROOT@|$(WWW_DOCUMENT_ROOT)|' writedata.py.in > writedata.py
+
+writexmlpath.py: writexmlpath.py.in
+	sed -e 's|@WWW_DOCUMENT_ROOT@|$(WWW_DOCUMENT_ROOT)|' writexmlpath.py.in > writexmlpath.py
 
 ${SHAREDLIB}: ${SRCS}
 	${SWIG} ${SWIG_FLAGS} ${INTERFACE}
@@ -49,7 +53,7 @@ install:
 
 clean:
 	rm -f ${IFILE}.py *.pyc ${WRAPFILE} ${WRAPFILE_O} ${SHAREDLIB}
-	rm -f writedata.html writedata.py
+	rm -f writedata.html writedata.py writexmlpath.py
 
 uninstall:
 	@for file in $(INSTALL_FILES); do rm -f $(INSTALL_DIR)/$${file}; done
