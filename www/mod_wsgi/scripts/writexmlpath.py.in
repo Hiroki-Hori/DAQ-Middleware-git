@@ -1,0 +1,44 @@
+#!/usr/bin/env python
+
+"""Write local data for the server program, daq.py
+"""
+__author__   = 'Hiroki Hori'
+__version__  = '0.01'
+__date__     = '15-October-2015'
+
+import sys
+import cgi
+file = "@WWW_DOCUMENT_ROOT@/daqmw/operatorPanel/xmlPath.txt"
+xml_ver = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>"
+xml_style = "<?xml-stylesheet href=\"../../operatorPanel/style.xsl\" type=\"text/xsl\" ?>"
+xml_body = "<response><methodName>WriteXmlPath</methodName><returnValue><result><status>OK</status></result></returnValue></response>"
+
+def SaveXmlPath(req, XmlPath):
+       """Save xml path into the file."""
+       fileObj = open(file, "w+")
+       fileObj.write(XmlPath)
+       output = xml_ver + xml_style + xml_body
+       response_headers = [('Content-type', 'text/xml'),
+                           ('Content-Length', str(len(output)))]
+       return response_headers, output
+
+def application(environ, start_response):
+       status = '200 OK'
+       wsgi_input     = environ['wsgi.input']
+       content_length = int(environ.get('CONTENT_LENGTH', 0))
+       params = cgi.parse_qsl(wsgi_input.read(content_length))
+       print >> sys.stderr, "params ", params
+       XmlPath =''
+       if params != []:
+              for param in params:
+                     print >> sys.stderr, "param[0] ", param[0]
+                     if param[0] == 'xmlPath':
+                            XmlPath = param[1]
+                            print >> sys.stderr,"OK ", XmlPath
+       req = environ['REQUEST_METHOD']
+       path = environ['PATH_INFO']
+       method = path[1:]  # extract '/'
+       print >>  sys.stderr, "request = ", req, "  method = ", method
+       response_headers, output = SaveXmlPath(req, XmlPath)
+       start_response(status, response_headers)
+       return [output]
