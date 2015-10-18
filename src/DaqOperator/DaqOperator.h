@@ -57,6 +57,9 @@ static const int RET_CODE_REQ_INV_IN_STS	= (-26);
 //error code for changed state
 static const int RET_CODE_CHG_NOT_FOUND          = (-101);
 
+//xml file directory used in changed state
+static const std::string CHG_XML_PATH = "/home/daq/MyDaq/Xml/";
+
 struct serviceInfo {
     std::string comp_id;
     RTC::CorbaConsumer<DAQService> daqService;

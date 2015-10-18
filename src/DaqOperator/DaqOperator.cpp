@@ -891,22 +891,19 @@ int DaqOperator::change_procedure()
 //add
     //check select file name
     //if not found xml file name, return error
-    std::string fname_str = file_name[idNo];
-/*    FILE *fnamechk;
-    if ((fnamechk = fopen(file_name[idNo], "r")) == NULL) {
-        sleep(5);
-        fclose(fnamechk);
-        FILE *fchk;
-        if((fchk = fopen(xmlPath.c_str(), "r")) == NULL) {
-            fclose(fchk);
-            std::cerr << "xml file not found."  << std::endl;
-            sleep(3);
-            return RET_CODE_CHG_NOT_FOUND;
-        }
-        fclose(fchk);
+    std::string idNostr = CHG_XML_PATH + file_name[idNo];
+    std::ifstream chkifs_idNo;
+    chkifs_idNo.open(idNostr.c_str(), std::ios::in);
+    std::ifstream chkifs_xmlPath;
+    chkifs_xmlPath.open(xmlPath.c_str(), std::ios::in);
+    if(!chkifs_idNo && !chkifs_xmlPath) {
+        std::cerr << "### ERROR: DaqOperator: change: xml file not found.\n";
+        chkifs_idNo.close();
+        chkifs_xmlPath.close();
+        return RET_CODE_CHG_NOT_FOUND; 
     }
-    fclose(fnamechk);
-*/
+    chkifs_idNo.close();
+
     m_com_completed = false;
     ConfFileParser MyParser;
     ParamList paramList;
@@ -918,12 +915,13 @@ int DaqOperator::change_procedure()
 
     gettime_set[0] = gettimeofday_sec();//start
     try {
-        if (xmlPath != "") {
+        if (chkifs_xmlPath) {
             m_conf_file = xmlPath;
         }else {
-            sprintf(input_xmlfile,"/home/daq/MyDaq/Xml/%s",file_name[idNo]);
-            m_conf_file = input_xmlfile;
+            std::string c_file = CHG_XML_PATH + file_name[idNo];
+            m_conf_file = c_file;
         }
+        chkifs_xmlPath.close();
 
         m_comp_num = MyParser.readConfFile(m_conf_file.c_str(), true);
         paramList  = MyParser.getParamList();
@@ -954,7 +952,7 @@ int DaqOperator::change_procedure()
             }
         }
     } catch (...) {
-        std::cerr << "### ERROR: DaqOperator: Failed to read the Configuration file\n";
+        std::cerr << "### ERROR: DaqOperator: Failed to read the Configuration file in change\n";
         std::cerr << "### Check the Configuration file\n";
         return 1;
     }
@@ -1470,7 +1468,8 @@ void DaqOperator::createDom_ng(std::string name, int code, char* str_e, char* st
 int DaqOperator::filename_output()
 {
     int i;
-    FILE *in_popen = popen("ls ~/MyDaq/Xml/","r");
+    std::string cmd = "ls " + CHG_XML_PATH;
+    FILE *in_popen = popen(cmd.c_str(),"r");
     char buf[30];
 
     memset(buf,'\0',sizeof(buf));
