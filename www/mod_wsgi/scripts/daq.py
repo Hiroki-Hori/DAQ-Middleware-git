@@ -100,6 +100,21 @@ def Restart(req, cmd=None):
 	if req == 'POST':
 		return putFunc("Restart", cmd)
 
+def Change(req, cmd=None):
+        """change command"""
+        if req == 'POST':
+                return putFunc("Change", cmd)
+
+def revConfigure(req, cmd=None):
+        """revConfigure command"""
+        if req == 'POST':
+                return putFunc("revConfigure", cmd)
+
+def revPause(req, cmd=None):
+        """revPause command"""
+        if req == 'POST':
+                return putFunc("revPause", cmd)
+
 def Abort(req, cmd=None):
 	"""Abort command"""
 	if req == 'POST':
@@ -133,6 +148,9 @@ def application(environ, start_response):
                 'Reset': Reset,
                 'ResetParams' : ResetParams,
                 'Save' : Save,
+                'Change' : Change,
+                'revConfigure' : revConfigure,
+                'revPause' : revPause,
                 'Abort' : Abort,
                 'ConfirmEnd' : ConfirmEnd,
                 'ConfirmConnection' : ConfirmConnection
