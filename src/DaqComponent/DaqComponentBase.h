@@ -329,6 +329,8 @@ namespace DAQMW
         virtual int daq_revconfigure()= 0;
         virtual int daq_revpause()    = 0;
 
+        virtual int daq_changed()     = 0;
+
         virtual int parse_params( ::NVList* list ) = 0;
 
         void fatal_error_report(FatalType::Enum type, int code = -1)
@@ -363,7 +365,7 @@ namespace DAQMW
             m_daq_do_func[RUNNING]    = &DAQMW::DaqComponentBase::daq_run;
             m_daq_do_func[PAUSED]     = &DAQMW::DaqComponentBase::daq_base_dummy;
 //add
-            m_daq_do_func[CHANGED]    = &DAQMW::DaqComponentBase::daq_base_dummy;
+            m_daq_do_func[CHANGED]    = &DAQMW::DaqComponentBase::daq_base_changed;
         }
 
         int reset_timer()
@@ -763,6 +765,14 @@ namespace DAQMW
         {
             set_status(COMP_WORKING);
             daq_revpause();
+            return 0;
+        }
+
+        int daq_base_changed()
+        {
+            daq_changed();
+            set_status(COMP_WORKING);
+            usleep(DAQ_IDLE_TIME_USEC);
             return 0;
         }
 //
