@@ -122,6 +122,8 @@ public:
     int command_change();
     int command_revconfigure();
     int command_revpause();
+    void view_comp_name();
+    void show_file_list();
 //
     int command_dummy();
 

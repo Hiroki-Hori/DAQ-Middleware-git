@@ -351,8 +351,9 @@ RTC::ReturnCode_t DaqOperator::run_console_mode()
                 resume_procedure();///
                 m_state = RUNNING;
                 break;
-//add
             case CMD_CHANGE:
+		view_comp_name();
+		show_file_list();
 		std::cerr << "\033[3;20H";
                 std::cerr << "Input_xml_file: ";
                 std::cin >> idNo;
@@ -397,8 +398,9 @@ RTC::ReturnCode_t DaqOperator::run_console_mode()
                 unconfigure_procedure();
                 m_state = LOADED;
                 break;
-//add
             case CMD_CHANGE:
+                view_comp_name();
+                show_file_list();
 		std::cerr << "\033[3;20H";
                 std::cerr << "Input_xml_file: ";
                 std::cin >> idNo;
@@ -466,16 +468,6 @@ RTC::ReturnCode_t DaqOperator::run_console_mode()
         std::cerr << "\033[;H\033[2J";
         std::cerr << "\033[5;0H";
         std::cerr << std::endl;
-
-//add
-        std::cerr << "\033[6;0H";
-        filename_output();
-        std::cerr << " ID:XML_FILE" << std::endl;
-        for(int i=0;i<file_num;i++){
-           std::cerr << " " << i << ":" << file_name[i] << std::endl;;
-        }
-           std::cerr << std::endl;
-//
 
         std::cerr << "  GROUP:COMP_NAME"
                   << "        "
@@ -1488,6 +1480,72 @@ int DaqOperator::filename_output()
 
     return 0;
 }
+
+void DaqOperator::show_file_list()
+{
+    std::cerr << "\0338";
+    std::cerr << std::endl;
+    filename_output();
+    std::cerr << " ID:XML_FILE" << std::endl;
+    for(int i=0;i<file_num;i++){
+       std::cerr << " " << i << ":" << file_name[i] << std::endl;;
+    }
+    std::cerr << std::endl;
+}
+
+void DaqOperator::view_comp_name()
+{
+        std::cerr << " " << std::endl;
+        std::cerr << "\033[5;0H";
+        std::cerr << std::endl;
+
+        std::cerr << "  GROUP:COMP_NAME"
+                  << "        "
+                  << " EVENT  SIZE"
+                  << "      "
+                  << " STATE"
+                  << "       "
+                  << " COMP STATUS"
+                  << std::endl;
+        ///std::cerr << "RUN NO: " << m_runNumber << std::endl;
+
+        std::string compname;
+        for (int i = (m_comp_num - 1); i >= 0; i--) {
+            Status_var status;
+            try {
+                RTC::ConnectorProfileList_var myprof
+                    = m_DaqServicePorts[i]->get_connector_profiles();
+                compname = myprof[0].name;
+                //std::cerr << "COMPNAME: " << compname << std::endl;
+
+                status = m_daqservices[i]->getStatus();
+
+                std::cerr << myprof[0].name
+                          << ": " << '\t'
+                          << std::setw(14)
+                          << std::right << status->event_size
+                          << '\t';
+
+                std::cerr.width(11);
+                std::cerr << check_state(status->state);
+                std::cerr.width(9);
+                std::cerr  << "  " << check_compStatus(status->comp_status);
+
+                if (status->comp_status == COMP_FATAL) {
+                    FatalErrorStatus_var errStatus;
+                    errStatus = m_daqservices[i]->getFatalStatus();
+                    std::cerr << "  ERROR ### " ;
+                } ///if Fatal
+
+            } catch(...) {
+                std::cerr << "### ERROR: " << compname << "  : cannot connect\n";
+                sleep(1);
+            }
+            std::cerr << std::endl;
+            std::cerr << "\0337";
+        }///for	
+}
+
 
 double DaqOperator::gettimeofday_sec()
 {
