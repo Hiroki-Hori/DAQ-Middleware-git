@@ -145,9 +145,9 @@ class daqmwcom:
             print "       -u or --unconfigure : unconfigure command"
             print "       -p or --pause       : pause command"
             print "       -r or --resume      : resume command"
-            print "       --change            : change command"
-            print "       --revconfigure      : revconfigure command"
-            print "       --revpause          : revpause command"
+            print "       -n or --change      : change command"
+            print "       -f or --revconfigure: revconfigure command"
+            print "       -s or --revpause    : revpause command"
             print "       -g tag or --getLog tag : getLog command"
             print "          for example, -g state or -g all"
             print "            all means all of tags"
@@ -155,7 +155,7 @@ class daqmwcom:
 
         urlbase = sys.argv[1]
         com = daqmwcom(urlbase)
-        opts, args = getopt.getopt(sys.argv[2:],'cb:euprgGCP:s', ['configure', 'start=', 'stop', 'unconfigure', 'pause', 'resume', 'change=', 'revconfigure', 'revpause', 'getLog', 'getLogSecure'] )
+        opts, args = getopt.getopt(sys.argv[2:],'cb:euprg:fsn:s', ['configure', 'start=', 'stop', 'unconfigure', 'pause', 'resume', 'change=', 'revconfigure', 'revpause', 'getLog=', 'getLogSecure'] )
         # print opts, args
         for o, a in opts:
             if o == "--configure" or o == "-c":
@@ -173,15 +173,14 @@ class daqmwcom:
             elif o == "--resume" or o == "-r":
                 print com.resume()
 
-            elif o == "--change":
+            elif o == "--change" or o == "-c":
                 xmlPath = a
                 print com.setXmlPath(xmlPath)
                 print com.change(xmlPath)
-            elif o == "--revconfigure":
+            elif o == "--revconfigure" or o == "-f":
                 print com.revConfigure()
-            elif o == "--revpause":
+            elif o == "--revpause" or o == "-s":
                 print com.revPause()
-
             elif o == "--getLog" or o == "-g":
                 tag = a
                 print com.getLog(tag)
